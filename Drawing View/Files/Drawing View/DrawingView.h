@@ -12,12 +12,14 @@
   id <DrawingViewDelegate> __weak _delegate;
   
   BOOL             _isErasing;
-  BOOL             _usingEraser;
   BOOL             _redrawAll;
+  BOOL             _usingEraser;
   uint             _currentPathIndex;
   float            _currentlineWidth;
   float            _eraserLineWidthMultiplier;
+  CGRect           _lastEraserDrawRect;
   CGPoint          _previousPoint;
+  CGPoint          _previousMidPoint;
   UIColor        * _currentColour;
   UIColor        * _originalBackgroundColour;
   UIBezierPath   * _currentPath;

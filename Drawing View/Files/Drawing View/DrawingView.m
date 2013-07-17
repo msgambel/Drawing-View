@@ -3,6 +3,10 @@
 #import "DrawingView.h"
 #import <QuartzCore/QuartzCore.h>
 
+// Marco to determine if the iOS verison is less than a specific version.
+#define SYSTEM_VERSION_LESS_THAN(v) ([[[UIDevice currentDevice] systemVersion] \
+compare:v options:NSNumericSearch] == NSOrderedAscending)
+
 // Static function to compute the midpoint of two CGPoint's.
 static CGPoint midpoint(CGPoint p0, CGPoint p1){
   return (CGPoint){((p0.x + p1.x) / 2.0), ((p0.y + p1.y) / 2.0)};
@@ -176,8 +180,9 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
 }
 
 - (UIImage *)takeScreenShot; {
-  // Start the graphics context for the current size of the drawn image.
-  UIGraphicsBeginImageContext(self.frame.size);
+  // Start the graphics context for the current size of the drawn image. Setting
+  // the scale to 0.0 means that Apple will figure out the screen scale for us!
+  UIGraphicsBeginImageContextWithOptions(self.frame.size, YES, 0.0f);
   
   // Grab the current context.
   CGContextRef context = UIGraphicsGetCurrentContext();
@@ -199,6 +204,12 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
 
 - (void)drawRect:(CGRect)rect; {
   [super drawRect:rect];
+  
+  // To see the updating of the region that is being redrawn, uncomment these
+  // lines below.
+//  CGContextRef context = UIGraphicsGetCurrentContext();
+//  CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
+//  CGContextStrokeRect(context, rect);
   
   // Note: This method is called every time the method "setNeedsDisplay" is
   //       called, which is not always by us (the system calls it a lot too!).
@@ -278,9 +289,18 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
 @implementation DrawingView (Private)
 
 - (void)initialize; {
+  // For a great video on how to improve rendering performance, watch:
+  //
+  // https://developer.apple.com/videos/wwdc/2012/?id=506
+  
   // Set the original background colour to white by default.
   [self setOriginalBackgroundColour:[UIColor whiteColor]];
   
+  // If the system version is at least iOS 6.0,
+  if(SYSTEM_VERSION_LESS_THAN(@"6.0") == NO){
+    // Tell the layer to draw asynchronously, in order to improve performance!
+    self.layer.drawsAsynchronously = YES;
+  }
   // Set that we are NOT erasing by default.
   _isErasing = NO;
   
@@ -365,8 +385,12 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
     // Move the current path to the current point of the starting point.
     [_currentPath moveToPoint:currentPoint];
     
-    // Add the current point to the current path.
-    [_currentPath addQuadCurveToPoint:currentPoint controlPoint:currentPoint];
+    // Set the midpoint to the current point, so we don't ever use the previous
+    // point in any computation.
+    midPoint = currentPoint;
+    
+    // Reset the last eraser's draw rect to the zero rect.
+    _lastEraserDrawRect = CGRectZero;
   }
   // If the user is still drawing the current path,
   else if(aPan.state == UIGestureRecognizerStateChanged){
@@ -382,6 +406,9 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
     }
     // Mark that we are no londer erasing.
     _isErasing = NO;
+    
+    // Reset the last eraser's draw rect to the zero rect.
+    _lastEraserDrawRect = CGRectZero;
     
     // Mark that we do NOT need to redraw the view.
     shouldReDrawView = NO;
@@ -400,14 +427,52 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
                                                endAngle:(2.0 * M_PI)
                                               clockwise:YES];
   }
+  // If we should redraw the view,
+  if(shouldReDrawView){
+    // If we are erasing,
+    if(_isErasing){
+      // Redraw the last eraser's draw rect to remove it from the view.
+      [self setNeedsDisplayInRect:_lastEraserDrawRect];
+      
+      // Compute the width and height of the rect holding the eraser circle.
+      CGFloat widthAndHeight = (_currentlineWidth * _eraserLineWidthMultiplier) + 2.0f;
+      
+      // Compute the x origin of the current eraser circle location.
+      CGFloat originX = currentPoint.x - (widthAndHeight / 2.0f);
+      
+      // Compute the x origin of the current eraser circle location.
+      CGFloat originY = currentPoint.y - (widthAndHeight / 2.0f);
+      
+      // Set the last Eraser's draw rect to the current redraw rect.
+      _lastEraserDrawRect = CGRectMake(originX, originY, widthAndHeight, widthAndHeight);
+    }
+    // Compute the minimum x position of the current line being drawn.
+    CGFloat minX = fmin(_previousMidPoint.x, midPoint.x) - (_currentlineWidth * _eraserLineWidthMultiplier);
+    
+    // Compute the minimum y position of the current line being drawn.
+    CGFloat minY = fmin(_previousMidPoint.y, midPoint.y) - (_currentlineWidth * _eraserLineWidthMultiplier);
+    
+    // Compute the maximum x position of the current line being drawn.
+    CGFloat maxX = fmax(_previousMidPoint.x, midPoint.x) + (_currentlineWidth * _eraserLineWidthMultiplier);
+    
+    // Compute the maximum x position of the current line being drawn.
+    CGFloat maxY = fmax(_previousMidPoint.y, midPoint.y) + (_currentlineWidth * _eraserLineWidthMultiplier);
+    
+    // Store the current point as the previous point.
+    _previousPoint = currentPoint;
+    
+    // Store the current midpoint as the previous midpoint.
+    _previousMidPoint = midPoint;
+    
+    // Redraw the view in the smallest rectangle required.
+    [self setNeedsDisplayInRect:CGRectMake(minX, minY, (maxX - minX), (maxY - minY))];
+  }
   // Store the current point as the previous point.
   _previousPoint = currentPoint;
   
-  // If we should redraw the view,
-  if(shouldReDrawView){
-    // Redraw the view.
-    [self setNeedsDisplay];
-  }
+  // Store the current midpoint as the previous midpoint.
+  _previousMidPoint = midPoint;
+  
   // Tell the delegate that it needs to update its controls.
   [_delegate updateControls];
 }
@@ -434,8 +499,17 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
   // Add the current dot path, and mark that it needs to be filled.
   [self addCurrentPathAndFill:YES];
   
-  // Redraw the view.
-  [self setNeedsDisplay];
+  // Compute the width and height of the rect holding the drawn circle.
+  CGFloat widthAndHeight = (_currentlineWidth * _eraserLineWidthMultiplier);
+  
+  // Compute the x origin of the current drawn circle location.
+  CGFloat originX = tapCentre.x - (widthAndHeight / 2.0f);
+  
+  // Compute the y origin of the current drawn circle location.
+  CGFloat originY = tapCentre.y - (widthAndHeight / 2.0f);
+  
+  // Redraw the view in the smallest rectangle required.
+  [self setNeedsDisplayInRect:CGRectMake(originX, originY, widthAndHeight, widthAndHeight)];
   
   // Store the current view as the new background image.
   [self setTheBackgroundImage];
