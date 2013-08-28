@@ -26,6 +26,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
 
 @synthesize delegate = _delegate;
 @synthesize colour = _currentColour;
+@synthesize debugModeOn = _debugModeOn;
 @synthesize usingEraser = _usingEraser;
 @synthesize lineWidth = _currentlineWidth;
 
@@ -205,11 +206,17 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
 - (void)drawRect:(CGRect)rect; {
   [super drawRect:rect];
   
-  // To see the updating of the region that is being redrawn, uncomment these
-  // lines below.
-//  CGContextRef context = UIGraphicsGetCurrentContext();
-//  CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
-//  CGContextStrokeRect(context, rect);
+  // If we are in debug mode and the update rect is NOT the entire frame,
+  if(_debugModeOn && (CGRectEqualToRect(rect, self.frame) == NO)){
+    // Grab the current graphical context.
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    // Set the Stroke colour to Red.
+    CGContextSetRGBStrokeColor(context, 1.0, 0.0, 0.0, 1.0);
+    
+    // Draw a red rectangle over the area that is being updated in the view.
+    CGContextStrokeRect(context, rect);
+  }
   
   // Note: This method is called every time the method "setNeedsDisplay" is
   //       called, which is not always by us (the system calls it a lot too!).

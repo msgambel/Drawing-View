@@ -4,6 +4,7 @@
 #import "DrawingView.h"
 
 @interface DrawView : UIView <UIAlertViewDelegate, DrawingViewDelegate> {
+  BOOL             _debugModeOn;
   uint             _originalIndex;
   CGRect           _originalFrame;
   UIView         * _paletteView;
@@ -20,6 +21,7 @@
   DrawingView    * _drawingView;
 }
 
+@property (nonatomic, assign)   BOOL      debugModeOn;
 @property (nonatomic, readonly) UIImage * drawing;
 
 @end

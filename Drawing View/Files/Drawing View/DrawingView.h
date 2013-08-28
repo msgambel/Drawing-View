@@ -13,6 +13,7 @@
   
   BOOL             _isErasing;
   BOOL             _redrawAll;
+  BOOL             _debugModeOn;
   BOOL             _usingEraser;
   uint             _currentPathIndex;
   float            _currentlineWidth;
@@ -35,6 +36,7 @@
 @property (nonatomic, readonly) BOOL      canRedo;
 @property (nonatomic, readonly) BOOL      canUndo;
 @property (nonatomic, readonly) BOOL      canClear;
+@property (nonatomic, assign)   BOOL      debugModeOn;
 @property (nonatomic, readonly) BOOL      usingEraser;
 @property (nonatomic, assign)   float     lineWidth;
 @property (nonatomic, strong)   UIColor * colour;

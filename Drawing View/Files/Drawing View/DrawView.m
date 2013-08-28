@@ -22,6 +22,23 @@
 
 @synthesize drawing = _drawing;
 
+#pragma mark - Getters
+
+- (BOOL)debugModeOn; {
+  // Return if debug mode is on or not.
+  return _debugModeOn;
+}
+
+#pragma mark - Setters
+
+- (void)setDebugModeOn:(BOOL)debugModeOn; {
+  // Set debug mode to be the input variable.
+  _debugModeOn = debugModeOn;
+  
+  // Set the DrawingView's debug mode to be the input variable.
+  _drawingView.debugModeOn = _debugModeOn;
+}
+
 #pragma mark - Init
 
 - (id)initWithFrame:(CGRect)frame; {
