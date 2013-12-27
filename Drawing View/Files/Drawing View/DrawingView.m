@@ -28,7 +28,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
 @synthesize colour = _currentColour;
 @synthesize debugModeOn = _debugModeOn;
 @synthesize usingEraser = _usingEraser;
-@synthesize lineWidth = _currentlineWidth;
+@synthesize lineWidth = _currentLineWidth;
 
 #pragma mark - Getters
 
@@ -240,6 +240,12 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
       // Grab the colour of the current path.
       colour = [_pathColoursArray objectAtIndex:index];
       
+      // Set the colour to be the current stroke colour.
+      [colour setStroke];
+      
+      // Draw the path into the view.
+      [path stroke];
+      
       // If the current path needs to be filled,
       if([[_pathFillColoursArray objectAtIndex:index] boolValue]){
         // Set the colour to be the current fill colour.
@@ -247,14 +253,6 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
         
         // Draw and fill the path into the view.
         [path fill];
-      }
-      // If the current path does NOT need to be filled,
-      else{
-        // Set the colour to be the current stroke colour.
-        [colour setStroke];
-        
-        // Draw the path into the view.
-        [path stroke];
       }
     }
     // Set that we no longer need to redraw all the paths.
@@ -266,7 +264,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
     [_currentColour setStroke];
     
     // Set the line width of the current path.
-    _currentPath.lineWidth = (_currentlineWidth * _eraserLineWidthMultiplier);
+    _currentPath.lineWidth = (_currentLineWidth * _eraserLineWidthMultiplier);
     
     // Draw the current path into the view.
     [_currentPath stroke];
@@ -318,7 +316,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
   _usingEraser = NO;
   
   // Set the current line width to 3.0 by default.
-  _currentlineWidth = 3.0f;
+  _currentLineWidth = 3.0f;
   
   // Set the eraser line width multiplier to 1.0 by default.
   _eraserLineWidthMultiplier = 1.0f;
@@ -429,7 +427,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
     // It has a radius of half of the current line width (as the current line
     // width is the diameter of the circle).
     _eraserPath = [UIBezierPath bezierPathWithArcCenter:currentPoint
-                                                 radius:((_currentlineWidth * _eraserLineWidthMultiplier) / 2.0f)
+                                                 radius:((_currentLineWidth * _eraserLineWidthMultiplier) / 2.0f)
                                              startAngle:0
                                                endAngle:(2.0 * M_PI)
                                               clockwise:YES];
@@ -442,7 +440,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
       [self setNeedsDisplayInRect:_lastEraserDrawRect];
       
       // Compute the width and height of the rect holding the eraser circle.
-      CGFloat widthAndHeight = (_currentlineWidth * _eraserLineWidthMultiplier) + 2.0f;
+      CGFloat widthAndHeight = (_currentLineWidth * _eraserLineWidthMultiplier) + 2.0f;
       
       // Compute the x origin of the current eraser circle location.
       CGFloat originX = currentPoint.x - (widthAndHeight / 2.0f);
@@ -454,16 +452,16 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
       _lastEraserDrawRect = CGRectMake(originX, originY, widthAndHeight, widthAndHeight);
     }
     // Compute the minimum x position of the current line being drawn.
-    CGFloat minX = fmin(_previousMidPoint.x, midPoint.x) - (_currentlineWidth * _eraserLineWidthMultiplier);
+    CGFloat minX = fmin(_previousMidPoint.x, midPoint.x) - (_currentLineWidth * _eraserLineWidthMultiplier);
     
     // Compute the minimum y position of the current line being drawn.
-    CGFloat minY = fmin(_previousMidPoint.y, midPoint.y) - (_currentlineWidth * _eraserLineWidthMultiplier);
+    CGFloat minY = fmin(_previousMidPoint.y, midPoint.y) - (_currentLineWidth * _eraserLineWidthMultiplier);
     
     // Compute the maximum x position of the current line being drawn.
-    CGFloat maxX = fmax(_previousMidPoint.x, midPoint.x) + (_currentlineWidth * _eraserLineWidthMultiplier);
+    CGFloat maxX = fmax(_previousMidPoint.x, midPoint.x) + (_currentLineWidth * _eraserLineWidthMultiplier);
     
     // Compute the maximum x position of the current line being drawn.
-    CGFloat maxY = fmax(_previousMidPoint.y, midPoint.y) + (_currentlineWidth * _eraserLineWidthMultiplier);
+    CGFloat maxY = fmax(_previousMidPoint.y, midPoint.y) + (_currentLineWidth * _eraserLineWidthMultiplier);
     
     // Store the current point as the previous point.
     _previousPoint = currentPoint;
@@ -498,7 +496,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
   // radius of half of the current line width (as the current line width is the
   // diameter of the circle).
   _currentPath = [UIBezierPath bezierPathWithArcCenter:tapCentre
-                                                radius:((_currentlineWidth * _eraserLineWidthMultiplier) / 2.0f)
+                                                radius:((_currentLineWidth * _eraserLineWidthMultiplier) / 2.0f)
                                             startAngle:0
                                               endAngle:(2.0 * M_PI)
                                              clockwise:YES];
@@ -507,7 +505,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
   [self addCurrentPathAndFill:YES];
   
   // Compute the width and height of the rect holding the drawn circle.
-  CGFloat widthAndHeight = (_currentlineWidth * _eraserLineWidthMultiplier);
+  CGFloat widthAndHeight = (_currentLineWidth * _eraserLineWidthMultiplier);
   
   // Compute the x origin of the current drawn circle location.
   CGFloat originX = tapCentre.x - (widthAndHeight / 2.0f);
@@ -540,7 +538,7 @@ static CGPoint midpoint(CGPoint p0, CGPoint p1){
   [_pathsArray addObject:_currentPath];
   
   // Store the width of the current path.
-  [_pathWidthsArray addObject:[NSNumber numberWithFloat:(_currentlineWidth * _eraserLineWidthMultiplier)]];
+  [_pathWidthsArray addObject:[NSNumber numberWithFloat:(_currentLineWidth * _eraserLineWidthMultiplier)]];
   
   // Store the colour of the current path.
   [_pathColoursArray addObject:[UIColor colorWithCGColor:_currentColour.CGColor]];
